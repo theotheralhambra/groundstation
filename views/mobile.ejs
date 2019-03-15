@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+  	<head>
+		<meta http-equiv="content-type" content="text/html;charset=utf-8">
+		
+		<title>HART Dash</title>
+	
+		<!-- Import External JS Dependencies -->
+		<!-- NOTE: these files should be localized for production -->
+		<script type="text/javascript" src="http://iop.io/js/vendor/d3.v3.min.js"></script>
+		<script type="text/javascript" src="http://iop.io/js/iopctrl.js"></script>
+	
+		<!-- Import Localized JS Dependencies -->
+		<script type="text/javascript" src="../js/gl-matrix.js"></script>
+	
+		<!-- Import GUI Element Scripts -->
+		<script type="text/javascript" src="../js/google.js"></script>
+	
+		<!-- Import CSS -->
+		<link rel="stylesheet" href="../css/mobile.css"> 	
+	</head>
+	<body onload="initGauges()">
+	
+		<script src="../lib/three.js"></script>
+		<script src="../lib/OrbitControls.js"></script>
+		<div class="content">
+		<div class="grid-container">
+		        <!-- TOP ROW: banner -->
+			<!--div class="item1"><img src="../img/aiaa2.png" alt="OSU AIAA"></div-->
+			<!-- 2ND ROW: boster velocity | pressure | thrust | sustainer velocity -->
+			<!-- altimeters -->
+			<div class="item1" >
+				<div>APOGEE</div>
+				<div id="apogeeContainer"></div>	
+			</div>
+			<div class="item2">
+				<div>BOOSTER ALT</div>
+				<div id="boosterAltimeterContainer"></div>
+			</div>
+			<div class="item3">
+				<div>SUSTAINER ALT</div>
+				<div id="sustainerAltimeterContainer"></div>
+			</div>
+			<!-- lat/lon readouts -->
+			<div class="item4">
+				<div>BOOSTER LAT</div>
+				<div id="boosterLatContainer"></div>	
+			</div>
+			<div class="item5">
+				<div>SUSTAINER LAT</div>
+				<div id="sustainerLatContainer"></div>		
+			</div>
+			<div class="item6">
+				<div>BOOSTER LON</div>
+				<div id="boosterLonContainer"></div>
+				
+			</div>
+			<div class="item7">
+				<div>SUSTAINER LON</div>
+				<div id="sustainerLonContainer"></div>	
+			</div>
+			<!-- gauges -->
+			<div class="item8" id="boosterVelocityGaugeContainer"></div>
+			<div class="item9" id="sustainerVelocityGaugeContainer"></div>
+			<div class="item10" id="boosterAccelerationGaugeContainer"></div>
+			<div class="item11" id="sustainerAccelerationGaugeContainer"></div>
+			<div class="item12" id="thrustGaugeContainer"></div>
+			<div class="item13" id="positionCanvas"></div>
+		</div>
+		</div>
+		
+		<script type="text/javascript" src="../js/altimeter.js"></script>
+		<script type="text/javascript" src="../js/position.js"></script>
+	</body>
+</html>
