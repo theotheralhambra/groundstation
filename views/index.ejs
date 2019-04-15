@@ -14,13 +14,137 @@
 		<script src="js/gl-matrix.js"></script>
 	
 		<!-- Import GUI Element Scripts -->
-		<script type="text/javascript" src="js/gauges.js"></script>
+		<script type="text/javascript" src="js/google.js"></script>
 	
 		<!-- Import CSS -->
 		<link rel="stylesheet" href="css/main.css"> 	
 	</head>
-	<body onload="initGauges()">
+	<body onload="initGauges(); initReadouts()">
 	
+    <script>
+      // handle the reception of telemetry from the websocket
+      var ws = new WebSocket('ws://localhost:1501');
+      
+      const clockIndex = 0;
+      const x_dstIndex = 1;
+      const x_velIndex = 2;
+      const x_accIndex = 3;
+      const y_dstIndex = 4;
+      const y_velIndex = 5;
+      const y_accIndex = 6;
+      const z_dstIndex = 7;
+      const z_velIndex = 8;
+      const z_accIndex = 9;
+      const s_tmpIndex = 10;
+      const x_gyrIndex = 11;
+      const y_gyrIndex = 12;
+      const z_gyrIndex = 13;
+      const s_latIndex = 23;
+      const s_lonIndex = 24;
+      
+      const positionAdj = 2000.;
+      
+      var apogeeAltitude = 0.0;
+      
+      function posAnimate(data) {
+      
+        var bx = parseFloat(data[x_dstIndex]) / positionAdj;
+        var by = parseFloat(data[y_dstIndex]) / positionAdj;
+        var bz = parseFloat(data[y_dstIndex]) / positionAdj;
+        var sx = bx;
+        var sy = by;
+        var sz = bz;
+        
+        requestAnimationFrame( posAnimate );
+        /*
+        addBoosterPathStep( bx, 
+                            by, 
+                            bz
+                          )
+        boosterIcon.position.x = bx;
+        boosterIcon.position.y = by;
+        boosterIcon.position.z = bz;
+    
+        addSustainerPathStep( sx, 
+                              sy, 
+                              sz
+                            )
+        sustainerIcon.position.x = sx;
+        sustainerIcon.position.y = sy;
+        sustainerIcon.position.z = sz;
+        */                    
+        controls.update(); // only required if controls.enableDamping = true, or if controls.autoRotate = true
+        render();
+
+      }
+      
+      function updateGauges(data) {
+        var bstAcc = sumXYZVectors(parseFloat(data[x_accIndex]), parseFloat(data[y_accIndex]), parseFloat(data[z_accIndex]));
+        var bstVel = sumXYZVectors(parseFloat(data[x_velIndex]), parseFloat(data[y_velIndex]), parseFloat(data[z_velIndex]));
+        //var susAcc = sumXYZVectors(parseFloat(data[x_accIndex]), parseFloat(data[y_accIndex]), parseFloat(data[z_accIndex]));
+        //var susVel = sumXYZVectors(parseFloat(data[x_velIndex]), parseFloat(data[y_velIndex]), parseFloat(data[z_velIndex]));
+              
+        gauges["boosterAcceleration"].redraw(bstAcc.toFixed(0));
+        gauges["boosterVelocity"].redraw(bstVel.toFixed(0));
+        gauges["temperature"].redraw( parseInt(tempKtoF(parseFloat(data[s_tmpIndex]))) );
+        gauges["sustainerVelocity"].redraw(bstVel.toFixed(0));
+        gauges["sustainerAcceleration"].redraw(bstAcc.toFixed(0));
+        
+      }
+     
+      function updateReadouts(data) {
+        var b_Alt = parseInt(data[y_dstIndex]);
+        //var s_Alt = parseInt(data[y_dstIndex]);
+        
+        if (b_Alt >= apogeeAltitude) {
+          apogeeAltitude = b_Alt;
+          readouts["apogee"].redraw(apogeeAltitude);
+        }
+        //if (s_Alt >= apogeeAltitude) {
+        //  apogeeAltitude = s_Alt;
+        //  readouts["apogee"].redraw(apogeeAltitude);
+        //}
+        readouts["boosterAltimeter"].redraw(parseInt(data[y_dstIndex]));
+        readouts["sustainerAltimeter"].redraw(parseInt(data[y_dstIndex]));
+        readouts["boosterLat"].redraw(data[s_latIndex]);
+        readouts["boosterLon"].redraw(data[s_lonIndex]);
+        readouts["sustainerLat"].redraw(data[s_latIndex]);
+        readouts["sustainerLon"].redraw(data[s_lonIndex]);
+        readouts["clock"].redraw(parseFloat(data[clockIndex]).toFixed(2));
+      }
+      
+      function sumXYZVectors(x_component, y_component, z_component) {
+        return Math.sqrt(x_component*x_component + y_component*y_component + z_component+z_component)
+      } 
+      
+      function tempKtoF(temp) {
+        return ((temp - 273.15) * (9./5.) + 32.);
+      }
+      
+      // event emmited when connected
+      ws.onopen = function () {
+        console.log('websocket is connected...');
+        apogeeAltitude = 0;
+        // sending a send event to websocket server
+        ws.send('connected');
+      }
+
+      // event emitted when receiving message 
+      ws.onmessage = function (ev) {
+        var line = ev.data.split(',');
+        //console.log("time: " + parseFloat(line[clockIndex]).toFixed(2));
+        
+        // update gauges
+        updateGauges(line);
+        
+        // update digital readouts
+        updateReadouts(line);
+        
+        // update position
+        posAnimate(line);
+      }
+    </script>
+  
 		<script src="lib/three.js"></script>
 		<script src="lib/OrbitControls.js"></script>
 		<div class="content">
@@ -32,7 +156,8 @@
 			<!--div class="item7"><img src="img/osu-vert.png" alt="OSU Logo"></div-->
 			<div class="item7" id="boosterVelocityGaugeContainer"></div>
 			<!--div class="item8" id="pressureGaugeContainer"></div-->
-			<div class="item9" id="thrustGaugeContainer"></div>
+			<!--div class="item9" id="thrustGaugeContainer"></div-->
+      <div class="item9" id="temperatureGaugeContainer"></div> <!--We should be out there, telling people item 9 exists!-->
 			<!--div class="item10"><img src="img/HARTpatch.png" alt="HART Team Patch"></div-->  
 			<div class="item10" id="sustainerVelocityGaugeContainer"></div>
 			<div class="item6"></div>
@@ -71,19 +196,22 @@
 				<div>SUSTAINER LON</div>
 				<div id="sustainerLonContainer"></div>	
 			</div>
-			<!-- 6TH ROW:  -->
-			<div class="item23">23</div>
-			<div class="item24">24</div>
-			<div class="item25">25</div>
-			<div class="item26">26</div>
-			<div class="item27">27</div>
-			<div class="item28">28</div>
-			<div class="item29">29</div>
-			<div class="item30">30</div>
-			<div class="item31">31</div>
-			<div class="item32">32</div>
-			<div class="item33">33</div>
-			<div class="item34">34</div>
+			<!-- 6TH ROW: these have to be here to make the position display size correctly -->
+			<div class="item23"></div>
+			<div class="item24"></div>
+			<div class="item25"></div>
+			<div class="item26">
+        <div>CLOCK</div>
+				<div id="clockContainer"></div>	
+      </div>
+			<div class="item27"></div>
+			<div class="item28"></div>
+			<div class="item29"></div>
+			<div class="item30"></div>
+			<div class="item31"></div>
+			<div class="item32"></div>
+			<div class="item33"></div>
+			<div class="item34"></div>
 		</div>
 		</div>
 		

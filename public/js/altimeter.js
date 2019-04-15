@@ -1,138 +1,96 @@
 /*
  * altimeter.js
- * This program uses d3.js built-ins to produce altimeter and GPS readouts
- * with a digital clock-like appearance. Note that colors are set separately
- * using CSS.
+ * This program uses d3.js built-ins and a library called iopctrl to produce altimeter 
+ * and GPS readouts with a digital clock-like appearance. Note that colors are set 
+ * separately using CSS.
  * Programmed by: Rick Menzel (menzelr@oregonstate.edu)
  */
  
-/*
- * apogee readout
+ var readouts = [];
+ 
+ //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+ 
+ /*
+ * simple helper function to create a readout with specified params
  */
-// setup element
-var apogeeSvg = d3.select("#apogeeContainer")			// get the display element
-                   .append("svg:svg")				// append scalable vector graphics attribute
-                   .attr("width", 200)				// svg absolute width
-                   .attr("height", 55);				// svg absolute height
-// create segmented "digital" style display
-var apogeeDisplay = iopctrl.segdisplay()
-                           .width(200)				// absolute element width
-                           .digitCount(6)			// number of display digits
-                           .negative(false)			// accepts negative values?
-                           .decimals(0);			// number of display decimal values
-// attach segmented "digital" style display to document
-apogeeSvg.append("g")
-   .attr("class", "apogeeDisplay")				// for css styling
-   //.attr("transform", "translate(200, 0)")			// position display within total element
-   .call(apogeeDisplay);					// invoke the readout
+function createReadout(name, width, height, digitCount, decimals, negative) {
+	var config = {
+		width: width,
+		height: height,
+		digitCount: digitCount,
+    decimals: decimals,
+    negative: negative
+	}
+	
+	readouts[name] = new Readout(name, config);
+	readouts[name].render();
+} // end function createReadout()
 
 //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-			   
+
 /*
- * booster readouts
- */ 
-// setup stage altitude readouts
-var boosterSvg = d3.select("#boosterAltimeterContainer")	// get the display element
-                   .append("svg:svg")				// append scalable vector graphics attribute
-                   .attr("width", 110)				// svg absolute width
-                   .attr("height", 28);				// svg absolute height
-// setup latitude and longitude readouts
-var boosterLatSvg = d3.select("#boosterLatContainer")		// get the display element
-                   .append("svg:svg")				// append scalable vector graphics attribute
-                   .attr("width", 140)				// svg absolute width
-                   .attr("height", 28);				// svg absolute height
-var boosterLonSvg = d3.select("#boosterLonContainer")		// get the display element
-                   .append("svg:svg")				// append scalable vector graphics attribute
-                   .attr("width", 140)				// svg absolute width
-                   .attr("height", 28);				// svg absolute height
-// segmented style digital displays
-var boosterDisplay = iopctrl.segdisplay()
-                           .width(110)				// absolute element width
-                           .digitCount(6)			// number of display digits
-                           .negative(false)			// accepts negative values?
-                           .decimals(0);			// number of display decimal values
-var boosterLatDisplay = iopctrl.segdisplay()
-                           .width(140)				// absolute element width
-                           .digitCount(8)			// number of display digits
-                           .negative(false)			// accepts negative values?
-                           .decimals(6);			// number of display decimal values
-var boosterLonDisplay = iopctrl.segdisplay()
-                           .width(140)				// absolute element width
-                           .digitCount(8)			// number of display digits
-                           .negative(false)			// accepts negative values?
-                           .decimals(6);			// number of display decimal values
-// attach segmented "digital" style displays to document
-boosterSvg.append("g")
-   .attr("class", "boosterDisplay")				// for css styling
-   //.attr("transform", "translate(200, 0)")			// position display within total element
-   .call(boosterDisplay);					// invoke the readout
-boosterLatSvg.append("g")
-   .attr("class", "boosterLatDisplay")				// for css styling
-   //.attr("transform", "translate(200, 0)")			// position display within total element
-   .call(boosterLatDisplay);					// invoke the readout
-boosterLonSvg.append("g")
-   .attr("class", "boosterLonDisplay")				// for css styling
-   //.attr("transform", "translate(200, 0)")			// position display within total element
-   .call(boosterLonDisplay);					// invoke the readout   
-			   
-//@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-		   
-/*
- * sustainer readouts
- */ 	
-// setup stage altitude readouts 
-var sustainerSvg = d3.select("#sustainerAltimeterContainer")	// get the display element
-                   .append("svg:svg")				// append scalable vector graphics attribute
-                   .attr("width", 110)				// svg absolute width
-                   .attr("height", 28);				// svg absolute height
-// setup latitude and longitude readouts
-var sustainerLatSvg = d3.select("#sustainerLatContainer")	// get the display element
-                   .append("svg:svg")				// append scalable vector graphics attribute
-                   .attr("width", 140)				// svg absolute width
-                   .attr("height", 28);				// svg absolute height
-var sustainerLonSvg = d3.select("#sustainerLonContainer")	// get the display element
-                   .append("svg:svg")				// append scalable vector graphics attribute
-                   .attr("width", 140)				// svg absolute width
-                   .attr("height", 28);				// svg absolute height
-// segmented style digital displays
-var sustainerDisplay = iopctrl.segdisplay()
-                           .width(110)				// absolute element width
-                           .digitCount(6)			// number of display digits
-                           .negative(false)			// accepts negative values?
-                           .decimals(0);			// number of display decimal values
-var sustainerLatDisplay = iopctrl.segdisplay()
-                           .width(140)				// absolute element width
-                           .digitCount(8)			// number of display digits
-                           .negative(false)			// accepts negative values?
-                           .decimals(6);			// number of display decimal values
-var sustainerLonDisplay = iopctrl.segdisplay()
-                           .width(140)				// absolute element width
-                           .digitCount(8)			// number of display digits
-                           .negative(false)			// accepts negative values?
-                           .decimals(6);			// number of display decimal values
-// attach segmented "digital" style displays to document
-sustainerSvg.append("g")
-   .attr("class", "sustainerDisplay")				// for css styling
-   //.attr("transform", "translate(200, 0)")			// position display within total element
-   .call(sustainerDisplay);					// invoke the readout   
-sustainerLatSvg.append("g")
-   .attr("class", "sustainerLatDisplay")			// for css styling
-   //.attr("transform", "translate(200, 0)")			// position display within total element
-   .call(sustainerLatDisplay);					// invoke the readout
-sustainerLonSvg.append("g")
-   .attr("class", "sustainerLonDisplay")			// for css styling
-   //.attr("transform", "translate(200, 0)")			// position display within total element
-   .call(sustainerLonDisplay);					// invoke the readout   
-     			
-//@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-	
-/*
- * set readout values
+ * simple helper function to invoke readout creator fn
  */
-apogeeDisplay.value(150000);			
-boosterDisplay.value(256);		
-sustainerDisplay.value(17000);		
-boosterLatDisplay.value(44.000123);
-boosterLonDisplay.value(44.000123);
-sustainerLatDisplay.value(44.000123);
-sustainerLonDisplay.value(44.000123);
+function createReadouts() {
+	createReadout("apogee",             200, 55, 6, 0, false);  // 0
+	createReadout("boosterAltimeter",   110, 28, 6, 0, false);	// 1
+	createReadout("sustainerAltimeter", 110, 28, 6, 0, false);	// 2
+	createReadout("boosterLat",         150, 28, 9, 6, true);	  // 3
+	createReadout("boosterLon",         150, 28, 9, 6, true);	  // 4
+	createReadout("sustainerLat",       150, 28, 9, 6, true);	  // 5
+  createReadout("sustainerLon",       150, 28, 9, 6, true);   // 6
+  createReadout("clock",              110, 34, 5, 2, false);  // 7
+} // end function createReadouts()
+
+//@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+/*
+ * simple helper function to create readouts - called by html on page load
+ */	
+function initReadouts() {
+	createReadouts();
+} // end function initReadouts()
+
+//@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+/*
+ * primary graphics function for segmented digital style readouts
+ */
+function Readout(readoutName, readoutConfig) {
+  this.readoutName = readoutName;
+  var self = this;                                                // this needs to be done so the redraw function can access the segdisplay value
+  
+  // config function. sets various readout parameters
+  this.configure = function(readoutConfig) {
+    this.config            = readoutConfig;
+    this.config.width      = this.config.width      || 110;
+    this.config.height     = this.config.height     || 28;
+    this.config.digitCount = this.config.digitCount || 6;
+    this.config.decimals   = this.config.decimals   || 0;
+    this.config.negative   = this.config.negative   || false;
+  }
+  
+  // graphics display function
+  this.render = function() {
+    this.segDisplay = iopctrl.segdisplay()                        // set up the seg display (d3 element must contain svg or g element)
+                             .width(this.config.width)				    // absolute element width
+                             .digitCount(this.config.digitCount)	// number of display digits
+                             .decimals(this.config.decimals)			// number of display decimal values
+                             .negative(this.config.negative);			// accepts negative values?
+    this.body = d3.select("#" + this.readoutName + "Container")
+                  .append("svg:svg")				                      // append scalable vector graphics attribute
+                  .attr("class", this.readoutName + "Display")	  // for css styling
+                  .attr("width", this.config.width)			          // svg absolute width
+                  .attr("height", this.config.height)	            // svg absolute height
+                  .append("g")                                    // for iopctrl
+                  .call(this.segDisplay);                         // invoke the segDisplay
+    this.redraw(0.0);              
+  }
+  // animation function. call this to update the readout
+  this.redraw = function(val) {
+    self.segDisplay.value(val);
+  }
+  // actually do the readout config
+  this.configure(readoutConfig);
+   
+ }

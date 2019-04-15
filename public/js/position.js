@@ -17,10 +17,12 @@ var winWidth  = 360;	// 4 css grid squares (90*4)
 var winHeight = 540;	// 6 css grid squares (90*6)
 
 // grid constants
-var gridSize      = 80;
+var gridSize      = 75;
 var gridDivisions = 10;
 var targetOffset  = 75.;
 var medianOffset  = targetOffset / 2;
+var texture;
+var loader = new THREE.TextureLoader();
 
 // base axes
 var xAxis = new THREE.Vector3(1,0,0);
@@ -55,8 +57,8 @@ var sustainerPath;
  
 // do first init/render
 positionInit();
-//render(); 
-animate();
+render(); 
+//animate();
 
 /*
  * graphics setup
@@ -67,7 +69,7 @@ function positionInit() {
 	//document.body.appendChild(container);
 	
 	// use WebGL rendering engine
-        renderer = new THREE.WebGLRenderer();
+  renderer = new THREE.WebGLRenderer();
 	// render an area equal to the size of our window; 
 	// NOTE: can render at a lower resolution by calling setSize 
 	// with false as updateStyle (the third argument). For example, 
@@ -80,11 +82,11 @@ function positionInit() {
 	
 	// setup the camera
 	camera = new THREE.PerspectiveCamera( 45, 			// FOV
-					      winWidth / winHeight, 	// aspect ratio (this ratio is standard)
-					      1, 			// near clipping plane
-					      500 			// far clipping plane (can be up to 10000)
+					      winWidth / winHeight, 	          // aspect ratio (this ratio is standard)
+					      1, 			                          // near clipping plane
+					      500 			                        // far clipping plane (can be up to 10000)
 					    );					
-	camera.position.set( 150, 150, 150 );				// camera position
+	camera.position.set( 150, 150, 150 );				    // camera position
 	camera.lookAt( 0, 0, 0 );
 
 	//camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 1, 1000 );
@@ -108,66 +110,75 @@ function positionInit() {
 	 * plane stuff
 	 */
 	// median grid stuff
-	var medianGridBaseColor   = 0x7f7f00;				// dark yellow; see https://www.color-hex.com/color/ffff00
-	var medianGridCenterColor = 0xffff00;				// yellow
-	var medianGrid = new THREE.GridHelper( gridSize, 		// grid size
-					       gridDivisions, 		// number of divisions
-				               medianGridCenterColor, 	// center line color
-				               medianGridBaseColor    	// base grid color
-					     );
-	medianGrid.translateOnAxis( yAxis, medianOffset );				     
-	scene.add( medianGrid );					// add median grid to scene
+	var medianGridBaseColor   = 0x7f7f00;				                  // dark yellow; see https://www.color-hex.com/color/ffff00
+	var medianGridCenterColor = 0xffff00;				                  // yellow
+	var medianGrid = new THREE.GridHelper(gridSize, 		          // grid size
+                                        gridDivisions, 		      // number of divisions
+                                        medianGridCenterColor, 	// center line color
+                                        medianGridBaseColor    	// base grid color
+                                       );
+	medianGrid.translateOnAxis( yAxis, medianOffset );				    // translate to vertical midpoint (~75k ft)
+	scene.add( medianGrid );					                            // add median grid to scene
 
 	// target grid stuff
-	var targetGridBaseColor   = 0x007f00;				// dark green; see https://www.color-hex.com/color/00ff00
-	var targetGridCenterColor = 0x00ff00;				// green
-	var targetGrid = new THREE.GridHelper( gridSize, 		// grid size
-                                               gridDivisions, 		// number of divisions
-				               targetGridCenterColor, 	// center line color
-				               targetGridBaseColor 	// base grid color
-				             );
-	targetGrid.translateOnAxis( yAxis, targetOffset );				     
-	scene.add( targetGrid );					// add base grid to scene
+	var targetGridBaseColor   = 0x007f00;				                  // dark green; see https://www.color-hex.com/color/00ff00
+	var targetGridCenterColor = 0x00ff00;				                  // green
+	var targetGrid = new THREE.GridHelper(gridSize, 		          // grid size
+                                        gridDivisions, 		      // number of divisions
+                                        targetGridCenterColor, 	// center line color
+                                        targetGridBaseColor 	  // base grid color
+                                       );
+	targetGrid.translateOnAxis( yAxis, targetOffset );				    // translate to ceiling (~150k feet)   
+	scene.add( targetGrid );					                            // add base grid to scene
 
 	// ground plane stuff
-	var groundPlaneGeometry = new THREE.PlaneGeometry( 80, 80, 10, 10 );
-	var groundPlaneMaterial = new THREE.MeshBasicMaterial( {color: 0x333333, side: THREE.DoubleSide} );	// grey for now
-	var groundPlane = new THREE.Mesh( groundPlaneGeometry, groundPlaneMaterial );
+  texture = loader.load('./img/spaceport_crop_labeled.jpg');            // load the image (image is exactly square)
+  texture.wrapS = THREE.RepeatWrapping;                         // do s wrapping 
+  texture.wrapT = THREE.RepeatWrapping;                         // do t wrapping
+  texture.repeat.set( 1, 1 );                                   // stretch image to fit ground plane
+  var groundPlaneMaterial = new THREE.MeshBasicMaterial( { map: texture } );    // use the texture
+	var groundPlaneGeometry = new THREE.PlaneGeometry(gridSize,   // ground plane x size (same as target grids)
+                                                    gridSize,   // ground plane z size (same as target grids)
+                                                    1,          // ground plane x divs (not really important)
+                                                    1           // ground plane x divs (not really important)
+                                                   );
+	//var groundPlaneMaterial = new THREE.MeshBasicMaterial( {color: 0x333333, side: THREE.DoubleSide} );	// grey for now
+	var groundPlane = new THREE.Mesh( groundPlaneGeometry, groundPlaneMaterial ); // composite
 	//groundPlane.translateOnAxis( yAxis, 0 );
 	groundPlane.rotation.x = - 90 * Math.PI / 180;								// rotate to horizontal
-	scene.add( groundPlane );
+	scene.add( groundPlane );                                     // add to scene
 	
 	/*
          * booster stuff
 	 */
 	// booster icon
-	boosterGeometry = new THREE.SphereGeometry( 2, 8, 8 );				// SphereGeometry(radius, width segments, height segments)
-	boosterMaterial = new THREE.MeshBasicMaterial( {color: 0xffb500} );		// OSU "Luminance" (https://communications.oregonstate.edu/brand-guide/visual-identity/colors)
+	boosterGeometry = new THREE.SphereGeometry( 2, 8, 8 );				            // SphereGeometry(radius, width segments, height segments)
+	boosterMaterial = new THREE.MeshBasicMaterial( {color: 0xffb500} );		    // OSU "Luminance" (https://communications.oregonstate.edu/brand-guide/visual-identity/colors)
 	boosterIcon = new THREE.Mesh( boosterGeometry, boosterMaterial );
-	scene.add( boosterIcon );
+	scene.add( boosterIcon );                                                 // add to scene
 	
 	//booster flight path
-	boosterPathMaterial = new THREE.LineBasicMaterial( {color: 0xffb500} );		// OSU "Luminance"
-	boosterPathGeometry = new THREE.Geometry();
-	boosterPathGeometry.vertices.push( new THREE.Vector3( 0, 0, 0) );		// at least one point is required at init
-	boosterPath = new THREE.Line( boosterPathGeometry, boosterPathMaterial );
-	scene.add( boosterPath );
+	boosterPathMaterial = new THREE.LineBasicMaterial( {color: 0xffb500} );	  // OSU "Luminance"
+	boosterPathGeometry = new THREE.Geometry();                               // "empty" geometry for now 
+	boosterPathGeometry.vertices.push( new THREE.Vector3( 0, 0, 0) );		      // at least one point is required at init
+	boosterPath = new THREE.Line( boosterPathGeometry, boosterPathMaterial ); // composite
+	scene.add( boosterPath );                                                 // add to scene
 	
 	/*
-         * sustainer stuff
+   * sustainer stuff
 	 */
 	// sustainer icon
-	sustainerGeometry = new THREE.ConeGeometry( 2, 3, 8 );				// ConeGeometry(radius, height, radial segments)
-	sustainerMaterial = new THREE.MeshBasicMaterial( {color: 0xd73f09} );		// Beaver Orange (https://communications.oregonstate.edu/brand-guide/visual-identity/colors)
-	sustainerIcon = new THREE.Mesh( sustainerGeometry, sustainerMaterial );
-	scene.add( sustainerIcon );
+	sustainerGeometry = new THREE.ConeGeometry( 2, 3, 8 );				            // ConeGeometry(radius, height, radial segments)
+	sustainerMaterial = new THREE.MeshBasicMaterial( {color: 0xd73f09} );		  // Beaver Orange (https://communications.oregonstate.edu/brand-guide/visual-identity/colors)
+	sustainerIcon = new THREE.Mesh( sustainerGeometry, sustainerMaterial );   // composite
+	scene.add( sustainerIcon );                                               // add to scene
 	
 	// sustainer flight path
 	sustainerPathMaterial = new THREE.LineBasicMaterial( {color: 0xd73f09} );	// Beaver Orange
-	sustainerPathGeometry = new THREE.Geometry();
-	sustainerPathGeometry.vertices.push( new THREE.Vector3( 0, 0, 0 ) );		// at least one point is required at init
-	sustainerPath = new THREE.Line( sustainerPathGeometry, sustainerPathMaterial );
-	scene.add( sustainerPath );
+	sustainerPathGeometry = new THREE.Geometry();                             // "empty" geometry for now 
+	sustainerPathGeometry.vertices.push( new THREE.Vector3( 0, 0, 0 ) );		  // at least one point is required at init
+	sustainerPath = new THREE.Line( sustainerPathGeometry, sustainerPathMaterial );// composite
+	scene.add( sustainerPath );                                               // add to scene
 	
 	
 	// show axes DEV ONLY
@@ -180,12 +191,16 @@ function positionInit() {
 //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
 /*
- * simple function to animate the composite scene
+ * simple function to animate the composite scene, essentially acts like a while() loop
  */
+ 
 function animate() {
 	
 	requestAnimationFrame( animate );
-
+  controls.update(); // only required if controls.enableDamping = true, or if controls.autoRotate = true
+	render();
+}
+/*
 	if (!stageSeperationFlag) {
 		boosterIcon.position.x += .01;
 		boosterIcon.position.y += .09;
@@ -242,10 +257,11 @@ function animate() {
 		sustainerIcon.position.y += .09;
 		sustainerIcon.position.z += .01;
 		
-		addSustainerPathStep( sustainerIcon.position.x, 
+		addSustainerPathStep( 
+                          sustainerIcon.position.x, 
 		                      sustainerIcon.position.y, 
-				      sustainerIcon.position.z
-				    )
+                          sustainerIcon.position.z
+                        )
 		
 		if (sustainerIcon.position.y >= targetOffset) {
 			sustainerDescentFlag = 1;
@@ -256,10 +272,11 @@ function animate() {
 		sustainerIcon.position.y -= .09;
 		sustainerIcon.position.z += .03;
 		
-		addSustainerPathStep( sustainerIcon.position.x, 
+		addSustainerPathStep( 
+                          sustainerIcon.position.x, 
 		                      sustainerIcon.position.y, 
-				      sustainerIcon.position.z
-				    )
+                          sustainerIcon.position.z
+                        );
 		
 		if (sustainerIcon.position.y <= 1) {
 			sustainerSplashFlag = 1;
@@ -272,7 +289,7 @@ function animate() {
 	render();
 
 }
-
+*/
 //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 			
 			
@@ -294,14 +311,14 @@ function render() {
 function addBoosterPathStep(x, y, z) {
 
 	vertices = boosterPathGeometry.vertices;					// get the history
-	vertices.push( new THREE.Vector3( x, y, z ) );					// add the new point
+	vertices.push( new THREE.Vector3( x, y, z ) );		// add the new point
 
-	boosterPathGeometry = new THREE.Geometry();					// create a new geometry object
+	boosterPathGeometry = new THREE.Geometry();				// create a new geometry object
 	boosterPathGeometry.vertices = vertices;					// append the updated vertices list
 
-	scene.remove( boosterPath );						 	// discard the old flight path
-	boosterPath = new THREE.Line( boosterPathGeometry, boosterPathMaterial ); 	// and finally replace it with the updated flight path
-	scene.add( boosterPath );
+	scene.remove( boosterPath );						        	// discard the old flight path
+	boosterPath = new THREE.Line( boosterPathGeometry, boosterPathMaterial ); 	// instantiate the new, updated flight path
+	scene.add( boosterPath );                         // and finally add it to the scene
 
 }
 
@@ -314,28 +331,15 @@ function addBoosterPathStep(x, y, z) {
 function addSustainerPathStep(x, y, z) {
 
 	vertices = sustainerPathGeometry.vertices; 					// get the history
-	vertices.push( new THREE.Vector3( x, y, z ) );					// add the new point
+	vertices.push( new THREE.Vector3( x, y, z ) );			// add the new point
 
-	sustainerPathGeometry = new THREE.Geometry();					// create a new geometry object
+	sustainerPathGeometry = new THREE.Geometry();				// create a new geometry object
 	sustainerPathGeometry.vertices = vertices;					// append the updated vertices list
 
-	scene.remove( sustainerPath );							// discard the old flight path
-	sustainerPath = new THREE.Line( sustainerPathGeometry, sustainerPathMaterial );	// and finally replace it with the updated flight path
-	scene.add( sustainerPath );
+	scene.remove( sustainerPath );							        // discard the old flight path
+	sustainerPath = new THREE.Line( sustainerPathGeometry, sustainerPathMaterial );	// instantiate the new, updated flight path
+	scene.add( sustainerPath );                         // and finally add it to the scene
 
 }
 
 //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-
-/*
- * 
- */
-//function onDocumentMouseDown( event ) {
-
-	
-
-//} // end function onDocumentMouseDown()
-//function getRandomHeightValue() {
-//	var overflow = 0; //10;
-//	return 0 - overflow + (targetOffset - 0 + overflow*2) *  Math.random();
-//} // end function getRandomValue(gauge)
